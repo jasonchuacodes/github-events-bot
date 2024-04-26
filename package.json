@@ -1,0 +1,21 @@
+{
+  "name": "webhook-events-bot",
+  "version": "1.0.0",
+  "description": "This is a public app for receiving webhook events and logging the data received.",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server": "node app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "octokit": "^3.2.0"
+  },
+  "devDependencies": {
+    "smee-client": "^2.0.1"
+  }
+}
