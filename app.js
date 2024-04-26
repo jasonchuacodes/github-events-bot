@@ -20,8 +20,6 @@ const app = new App({
   },
 });
 
-const messageForNewPRs = "Thanks for opening a new PR! Please follow our contributing guidelines to make your PR easier to review.";
-
 async function handlePullRequestOpened({octokit, payload}) {
   console.log(`Received a pull request event for #${payload.pull_request.number}`);
 
@@ -30,7 +28,7 @@ async function handlePullRequestOpened({octokit, payload}) {
       owner: payload.repository.owner.login,
       repo: payload.repository.name,
       issue_number: payload.pull_request.number,
-      body: messageForNewPRs,
+      body: "Thanks for opening a new PR! Please follow our contributing guidelines to make your PR easier to review.",
       headers: {
         "x-github-api-version": "2022-11-28",
       },
@@ -43,7 +41,16 @@ async function handlePullRequestOpened({octokit, payload}) {
   }
 };
 
+async function handleIssueOpened() {
+  console.log(`Received an issue event: opened issue`)
+}
+async function handleIssueCommentCreated() {
+  console.log(`Received an issue event: comment added on issue`)
+}
+
 app.webhooks.on("pull_request.opened", handlePullRequestOpened);
+app.webhooks.on("issues.opened", handleIssueOpened);
+app.webhooks.on("issue_comment.created", handleIssueCommentCreated);
 
 app.webhooks.onError((error) => {
   if (error.name === "AggregateError") {
