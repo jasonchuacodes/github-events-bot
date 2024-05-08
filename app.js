@@ -1,3 +1,4 @@
+import { Octokit } from '@octokit/rest';
 import dotenv from 'dotenv';
 import { App } from 'octokit';
 import { createNodeMiddleware } from '@octokit/webhooks';
@@ -6,10 +7,15 @@ import http from 'http';
 
 dotenv.config();
 
+
+const REPOSITORY = 'sample-project';
+const OWNER = 'jasonchuacodes';
+
 // app setup
 const appId = process.env.APP_ID;
 const webhookSecret = process.env.WEBHOOK_SECRET;
 const privateKeyPath = process.env.PRIVATE_KEY_PATH;
+const accessToken = process.env.ACCESS_TOKEN
 
 const privateKey = fs.readFileSync(privateKeyPath, 'utf8');
 
@@ -20,6 +26,59 @@ const app = new App({
         secret: webhookSecret,
     },
 });
+
+const octokit = new Octokit({
+    auth: accessToken,
+    userAgent: 'webhook-events-bot v1.2.3',
+});
+
+/**
+ * GOAL:
+ * 1. Move the octokit functionality for reading the repository files to a github webhook event
+ * 2. Authenticate by using an installation access token instead of static ACCESS_TOKEN
+*/
+
+const getCommitSHA = async () => {
+    const { data } = await octokit.repos.getBranch({
+        owner: OWNER,
+        repo: REPOSITORY,
+        branch: 'main',
+    });
+
+    return data.commit.sha;
+};
+
+const main = async () => {
+    const COMMIT_SHA = await getCommitSHA();
+
+    try {
+        const { data: tree_data } = await octokit.rest.git.getTree({
+            owner: OWNER,
+            repo: REPOSITORY,
+            tree_sha: COMMIT_SHA,
+            recursive: true,
+        });
+
+        tree_data.tree.map(async (tree) => {
+            if (tree.type === 'blob') {
+                const response = await octokit.rest.repos.getContent({
+                    owner: OWNER,
+                    repo: REPOSITORY,
+                    path: tree.path
+                  });
+
+                const parsedContent = Buffer.from(response.data.content, 'base64').toString(
+                    'utf-8'
+                );
+                console.log(parsedContent + '________')
+            }
+        });
+    } catch (error) {
+        console.error('Failed to retrieve tree:', error);
+    }
+};
+
+main();
 
 /**
  * Event handlers
@@ -194,12 +253,12 @@ const handleTeamEdited = async () => {
 };
 const handleTeamAdd = async () => {
     console.log('Received a team event: team add');
-}
+};
 
 // Push
 const handlePush = async () => {
-    console.log('Received a push event: commit pushed')
-}
+    console.log('Received a push event: commit pushed');
+};
 
 /**
  * Webhook event listeners
